@@ -23,24 +23,52 @@ class GameManager:
         self.db = Database()
 
     def create_or_join(self, user_id, name):
-        # Find open room
-        for room_id, room in self.rooms.items():
-            if not room['started'] and len(room['players']) < 6:
-                if not any(p['id'] == user_id for p in room['players']):
-                    profile = self.db.get_player(user_id, name)
-                    room['players'].append({
-                        "id": user_id,
-                        "name": name,
-                        "color": COLORS[len(room['players'])],
-                        "stars": 8,
-                        "xp": profile['xp'],
-                        "level": profile['level'],
-                        "turn_time": LEVEL_TIMERS[profile['level']],
-                        "pieces": make_pieces(),
-                        "finished": False,
-                        "finish_order": None
-                    })
-                return room_id, False
+    room_id = str(uuid.uuid4())[:6].upper()
+    profile = self.db.get_player(user_id, name)
+    self.rooms[room_id] = {
+        "started": False,
+        "turn_index": 0,
+        "last_roll": None,
+        "finish_order": [],
+        "players": [{
+            "id": user_id,
+            "name": name,
+            "color": COLORS[0],
+            "stars": 8,
+            "xp": profile['xp'],
+            "level": profile['level'],
+            "turn_time": LEVEL_TIMERS[profile['level']],
+            "pieces": make_pieces(),
+            "finished": False,
+            "finish_order": None
+        }]
+    }
+    return room_id, True
+
+def join_room(self, room_id, user_id, name):
+    room = self.rooms.get(room_id)
+    if not room:
+        return False, "Room not found!"
+    if room['started']:
+        return False, "Game already started!"
+    if len(room['players']) >= 6:
+        return False, "Room is full!"
+    if any(p['id'] == user_id for p in room['players']):
+        return False, "You're already in this room!"
+    profile = self.db.get_player(user_id, name)
+    room['players'].append({
+        "id": user_id,
+        "name": name,
+        "color": COLORS[len(room['players'])],
+        "stars": 8,
+        "xp": profile['xp'],
+        "level": profile['level'],
+        "turn_time": LEVEL_TIMERS[profile['level']],
+        "pieces": make_pieces(),
+        "finished": False,
+        "finish_order": None
+    })
+    return True, "Joined!"
 
         # Create new room
         room_id = str(uuid.uuid4())[:6].upper()

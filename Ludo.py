@@ -204,6 +204,32 @@ async def name_dungeon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"🏰 *{name}* added to your land!\nYour empire grows... ⚔️",
         parse_mode="Markdown"
     )
+    
+ async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    if not context.args:
+        await update.message.reply_text("Usage: /join <room code>\nExample: /join ABC123")
+        return
+    room_id = context.args[0].upper()
+    success, msg = manager.join_room(room_id, user.id, user.username or user.first_name)
+    if not success:
+        await update.message.reply_text(f"❌ {msg}")
+        return
+    room = manager.get_room(room_id)
+    count = len(room['players'])
+    player_list = "\n".join([f"• {p['name']}" for p in room['players']])
+    keyboard = []
+    if count >= 2:
+        keyboard.append([InlineKeyboardButton("⚔️ START GAME", callback_data=f"start_{room_id}")])
+    keyboard.append([InlineKeyboardButton("🚪 Leave", callback_data=f"leave_{room_id}")])
+    await update.message.reply_text(
+        f"✅ *Joined successfully!*\n\n"
+        f"🏰 *DUNGEON LOBBY* | Room: `{room_id}`\n\n"
+        f"Players ({count}/6):\n{player_list}\n\n"
+        f"{'✅ Ready to start!' if count >= 2 else '⏳ Waiting for more players...'}",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 def main():
     token = os.getenv("BOT_TOKEN")
@@ -212,6 +238,7 @@ def main():
     app = ApplicationBuilder().token(token).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("play", play))
+    app.add_handler(CommandHandler("join", join_game))
     app.add_handler(CommandHandler("profile", profile))
     app.add_handler(CommandHandler("leaderboard", leaderboard))
     app.add_handler(CommandHandler("namedungeon", name_dungeon))
