@@ -205,7 +205,7 @@ async def name_dungeon(update: Update, context: ContextTypes.DEFAULT_TYPE):
         parse_mode="Markdown"
     )
     
- async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def join_game(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if not context.args:
         await update.message.reply_text("Usage: /join <room code>\nExample: /join ABC123")
@@ -222,6 +222,19 @@ async def name_dungeon(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if count >= 2:
         keyboard.append([InlineKeyboardButton("⚔️ START GAME", callback_data=f"start_{room_id}")])
     keyboard.append([InlineKeyboardButton("🚪 Leave", callback_data=f"leave_{room_id}")])
+    # Notify host
+    host = room['players'][0]
+    try:
+        await context.bot.send_message(
+            chat_id=host['id'],
+            text=f"👥 *{user.username or user.first_name} joined your lobby!*\n\n"
+                 f"Players ({count}/6):\n{player_list}\n\n"
+                 f"{'✅ Ready to start!' if count >= 2 else '⏳ Waiting for more players...'}",
+            parse_mode="Markdown",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    except:
+        pass 
     await update.message.reply_text(
         f"✅ *Joined successfully!*\n\n"
         f"🏰 *DUNGEON LOBBY* | Room: `{room_id}`\n\n"
